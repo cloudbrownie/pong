@@ -14,8 +14,9 @@ Controls:
 
 To Install:
  - Unzip the downloaded folder
- - Make sure that the "data" folder is in the same folder as the "pong.exe"
-- As long as the "data" folder is in the same folder as "pong.exe", running "pong.exe" will open the game
+ - Make sure that the "data" folder is in the same folder as the "pong.py"
+ - "pong.py" will run as long as the "data" folder is in the same folder
+ - You can also compile the "pong.py" if you wish for a .exe version
 
 To Play:
  - Press ENTER / RETURN to exit the title and go to the selection screen
