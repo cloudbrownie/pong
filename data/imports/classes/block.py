@@ -35,7 +35,7 @@ class Block:
             self.up = False
             self.down = False
             if not ball.out:
-                if ball.rect.centerx <= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
+                if ball.rect.centerx >= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
                     yDist = self.rect.centery - ball.rect.centery
                     if yDist > ball.radius * tol:
                         self.up = True
@@ -54,7 +54,7 @@ class Block:
             self.up = False
             self.down = False
             if not ball.out:
-                if ball.rect.centerx >= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
+                if ball.rect.centerx <= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
                     yDist = self.rect.centery - ball.rect.centery
                     if yDist > ball.radius * tol:
                         self.up = True
