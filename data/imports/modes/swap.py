@@ -5,7 +5,21 @@ from data.imports.classes.pongball import PongBall
 from data.imports.classes.block import Block
 from pygame.locals import *
 
-def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay, mute, particleEffects):
+def swapPaddles(paddle1, paddle2):
+    paddle1Color = paddle1.color
+    paddle2Color = paddle2.color
+    paddle1Dirs = paddle1.up, paddle1.down
+    paddle2Dirs = paddle2.up, paddle2.down
+    temp = paddle1
+    paddle1 = paddle2
+    paddle2 = temp
+    paddle1.color = paddle1Color
+    paddle2.color = paddle2Color
+    paddle1.up, paddle1.down = paddle1Dirs
+    paddle2.up, paddle2.down = paddle2Dirs
+    return paddle1, paddle2
+
+def SwapMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay, mute, particleEffects):
 
     #unpack params
     maxVol = vols[0]
@@ -40,8 +54,8 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
     ball = PongBall(display.get_width() // 2, display.get_height() // 2, ballRadius, ballSpeed, (249, 249, 249), xDir)
 
     #create paddles
-    blockOne = Block(150, display.get_height() // 2, 100, 500, paddleSpeed, (249, 249, 249), 1)
-    blockTwo = Block(display.get_width() - 150, display.get_height() // 2, 100, 500, paddleSpeed, (249, 249, 249), -1)
+    blockOne = Block(150, display.get_height() // 2, 100, 500, paddleSpeed, (255, 100, 100), 1)
+    blockTwo = Block(display.get_width() - 150, display.get_height() // 2, 100, 500, paddleSpeed, (100, 255, 100), -1)
     p1Paddle = blockTwo
     blocks = [p1Paddle]
     if players == 2:
@@ -50,6 +64,10 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
     else:
         aiPaddle = blockOne
         blocks.extend([aiPaddle])
+
+    #swap setup
+    swapTime = time.time()
+    maxSwapTime = random.randint(5, 10)
 
     #gameloop
     running = True
@@ -122,15 +140,23 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
 
         #auto move second block if it is 1 player
         if not pause and players == 1:
-            aiPaddle.aiUpdate(display, ball, dt, display.get_width() // 2, 2, blockTwo, True)
+            aiPaddle.aiUpdate(display, ball, dt, display.get_width() // 2, 2, p1Paddle, True)
         elif pause and players == 1:
             aiPaddle.draw(display)
 
+        #swap paddle
+        if not pause and time.time() - swapTime >= maxSwapTime:
+            if players == 1:
+                aiPaddle, p1Paddle = swapPaddles(aiPaddle, p1Paddle)
+            else:
+                p1Paddle, p2Paddle = swapPaddles(p1Paddle, p2Paddle)
+            swapTime = time.time()
+            maxSwapTime = random.randint(5, 10)
+
         #create a particle at the balls location that slowly fades
-        if not pause:
-            if not ball.out:
-                if particleEffects:
-                    particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
+        if not pause and not ball.out:
+            if particleEffects:
+                particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
             if ball.hit:
                 if not mute:
                     random.choice(hitSounds).play()
@@ -160,7 +186,7 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
             ball.out = True
 
         #checking if ball is out on left side
-        elif ball.rect.right <= 0:
+        elif ball.rect.x + ball.rect.h <= 0:
             if not ball.out:
                 if particleEffects:
                     particles.extend(genCollideParticles(0, ball.rect.centery, (255, 172, 183), (10, 15), (10, 20), (-20, 20), (50, 100)))
@@ -182,7 +208,7 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
                     screenShake[1] -= 1
 
         #reset game
-        if not pause and ball.out and screenShake == [0, 0] and len(particles) == 0:
+        if ball.out and screenShake == [0, 0] and len(particles) == 0 and not pause:
             ball.reset(display, xDir)
             if not mute:
                 setVolumes(hitSounds, maxVol)

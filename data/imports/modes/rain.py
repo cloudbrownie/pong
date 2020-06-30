@@ -3,9 +3,13 @@ from data.imports.general import *
 from data.imports.classes.particle import Particle
 from data.imports.classes.pongball import PongBall
 from data.imports.classes.block import Block
+from data.imports.classes.effectbubble import EffectBubble
 from pygame.locals import *
 
-def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay, mute, particleEffects):
+def genEffectBubble(effect, xRange, radiusRange):
+    return EffectBubble(random.randint(xRange[0], xRange[1]), 0, random.randint(radiusRange[0], radiusRange[1]), random.randint(1, 5), effect)
+
+def RainMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay, mute, particleEffects):
 
     #unpack params
     maxVol = vols[0]
@@ -50,6 +54,15 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
     else:
         aiPaddle = blockOne
         blocks.extend([aiPaddle])
+
+    #bubbles setup
+    bubbles = []
+    bubbleGenTime = time.time()
+    maxGenTime = 3
+
+    #effect setup
+    effects = ("doubleScore","tripleScore","halfHeight","doubleHeight","halfSpeed","doubleSpeed")
+    applied = False
 
     #gameloop
     running = True
@@ -111,9 +124,24 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
         screen.fill((104, 134, 197))
         display.fill((104, 134, 197))
 
+        #generate bubbles
+        if not pause and time.time() - bubbleGenTime >= maxGenTime:
+            bubbleGenTime = time.time()
+            bubbles.append(genEffectBubble(random.choice(effects), (200, display.get_width() - 200), (ballRadius // 2, ballRadius)))
+
+        #update bubbles
+        if not pause:
+            for bubble in bubbles:
+                bubble.update(display, dt)
+                if bubble.out:
+                    bubbles.pop(bubbles.index(bubble))
+        else:
+            for bubble in bubbles:
+                bubble.draw(display)
+
         #update game elements
         if not pause:
-            ball.update(display, blocks, dt)
+            ball.rainUpdate(display, blocks, bubbles, dt)
         else:
             ball.draw(display)
         p1Paddle.update(display, dt)
@@ -126,12 +154,12 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
         elif pause and players == 1:
             aiPaddle.draw(display)
 
+
         #create a particle at the balls location that slowly fades
-        if not pause:
-            if not ball.out:
-                if particleEffects:
-                    particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
-            if ball.hit:
+        if not pause and not ball.out:
+            if particleEffects:
+                particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
+            if ball.hit: #also check if the ball has been hit
                 if not mute:
                     random.choice(hitSounds).play()
                 if particleEffects:
@@ -172,6 +200,53 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
                 xDir = 1
             ball.out = True
 
+        #apply ball effects
+        if ball.out and not applied and len(ball.effects) > 0:
+            for effect in ball.effects:
+                if effect == "doubleScore":
+                    if xDir > 0:
+                        score[1] += 1
+                    else:
+                        score[0] += 1
+                elif effect == "tripleScore":
+                    if xDir > 0:
+                        score[1] += 2
+                    else:
+                        score[0] += 2
+                elif effect == "halfHeight":
+                    if xDir > 0:
+                        if players == 1:
+                            aiPaddle.rect.h /= 2
+                        else:
+                            p2Paddle.rect.h /= 2
+                    else:
+                        p1Paddle.rect.h /= 2
+                elif effect == "doubleHeight":
+                    if xDir > 0:
+                        p1Paddle.rect.h *= 2
+                    else:
+                        if players == 1:
+                            aiPaddle.rect.h *= 2
+                        else:
+                            p2Paddle.rect.h *= 2
+                elif effect == "halfSpeed":
+                    if xDir > 0:
+                        if players == 1:
+                            aiPaddle.vel /= 2
+                        else:
+                            p2Paddle.vel /= 2
+                    else:
+                        p1Paddle.vel /= 2
+                elif effect == "doubleSpeed":
+                    if xDir > 0:
+                        p1Paddle.vel *= 2
+                    else:
+                        if players == 1:
+                            aiPaddle.vel *= 2
+                        else:
+                            p2Paddle.vel *= 2
+            applied = True
+
         #decreasing screen shake values
         if screenShake != [0, 0]:
             if time.time() - shakeTime > .1:
@@ -184,6 +259,7 @@ def ClassicMode(display, screen, players, hitSounds, vols, bigFont, score, ballI
         #reset game
         if not pause and ball.out and screenShake == [0, 0] and len(particles) == 0:
             ball.reset(display, xDir)
+            applied = False
             if not mute:
                 setVolumes(hitSounds, maxVol)
             #re render score

@@ -5,7 +5,14 @@ from data.imports.classes.pongball import PongBall
 from data.imports.classes.block import Block
 from pygame.locals import *
 
-def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay):
+#mode specific function
+def genNewBall(center, xVel, yVel, ballInfo):
+    ball = PongBall(center[0], center[1], ballInfo[0], ballInfo[1], ballInfo[2], ballInfo[3])
+    ball.xVel = xVel
+    ball.yVel = yVel * 1.5
+    return ball
+
+def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInfo, paddleSpeed, crunchDelay, mute, particleEffects):
 
     #unpack params
     maxVol = vols[0]
@@ -18,15 +25,14 @@ def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInf
     particles = []
     prevTime = time.time()
     time.sleep(0.1)
-    screenShake = [0, 0]
     setVolumes(hitSounds, maxVol)
     pause = False
 
     #score
     pointSurface = bigFont.render(f"{score[0]} - {score[1]}", False, (249, 249, 249))
     pointSize = bigFont.size(f"{score[0]} - {score[1]}")
-    pointCenter = (pointSize[0] // 2, pointSize[1] // 2)
-    
+    pointCenter = pointSize[0] // 2, pointSize[1] // 2
+
     #gui
     gui = pygame.Surface((display.get_width(), display.get_height()))
     gui.set_colorkey((0,0,0))
@@ -37,11 +43,7 @@ def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInf
     pauseSurface.set_alpha(100)
 
     #create ball
-    balls = [PongBall(display.get_width() // 2, display.get_height() // 2, ballRadius, ballSpeed, (249, 249, 249), xDir)]
-    for ball in balls:
-        ball.inPlay = True
-        ball.out = False
-    hitTime = time.time()
+    balls = [PongBall(display.get_width() // 2, display.get_height() // 2, ballRadius, ballSpeed, (255, 172, 183), xDir)]
 
     #create paddles
     blockOne = Block(150, display.get_height() // 2, 100, 500, paddleSpeed, (249, 249, 249), 1)
@@ -120,64 +122,69 @@ def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInf
 
         #update game elements
         for ball in balls:
-            ball.update(hitSounds, display, blocks, dt)
+            if not pause:
+                ball.update( display, blocks, dt)
+            else:
+                ball.draw(display)
         p1Paddle.update(display, dt)
         if players == 2:
             p2Paddle.update(display, dt)
 
         #auto move second block if it is 1 player
-        if not pause and players == 1:
-            aiPaddle.aiUpdate(display, balls[0], dt, display.get_width() // 2, 2, True, False, blockTwo, True)
-        elif pause and players == 1:
-            blockOne.aiUpdate(display, balls[0], dt, display.get_width() // 2, 2, True, True, blockTwo, True)
+        if len(balls) > 0 and players == 1:
+            if not pause:
+                if balls[0].out:
+                    aiPaddle.aiUpdate(display, balls[1], dt, display.get_width() // 2, 2, blockTwo, True)
+                else:
+                    aiPaddle.aiUpdate(display, balls[0], dt, display.get_width() // 2, 2, blockTwo, True)
+            else:
+                aiPaddle.draw(display)
 
+        #update every ball on screen
         for ball in balls:
-            ball.inPlay = True
-            ball.out = False
-
-        #create a particle at the balls location that slowly fades
-        for ball in balls:
-
             while len(particles) >= 50:
                 particles.pop(0)
-            
-            if not pause and not ball.out:
-                particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
 
-            #if ball hit ceiling or floor, gen some particles
-            if not pause and ball.yBounce and not ball.out:
-                particles.extend(genCollideParticles(ball.rect.centerx, ball.rect.centery, (255, 224, 172), (5, 5), (-5, 5), (-5, 5), (50, 100)))
-                balls.append(PongBall(display.get_width() // 2, display.get_height() // 2, ballRadius, ballSpeed, (249, 249, 249), xDir))
-                
-
-            #if ball was hit, play sound and generate collision particles
-            if not pause and ball.hit:
-                hitTime = time.time()
-                random.choice(hitSounds).play()
-                particles.extend(genCollideParticles(ball.rect.centerx, ball.rect.centery, (255, 224, 172), (5, 5), (-5, 5), (-5, 5), (50, 100)))
-                balls.append(PongBall(display.get_width() // 2, display.get_height() // 2, ballRadius, ballSpeed, (249, 249, 249), xDir))
+            if not pause:
+                if not ball.out:
+                    if particleEffects:
+                        particles.append(Particle(ball.rect.centerx, ball.rect.centery, 0, 0, ball.radius, ball.color))
+                if ball.hit: #if the ball hit anything
+                    if particleEffects:
+                        particles.extend(genCollideParticles(ball.rect.centerx, ball.rect.centery, (255, 224, 172), (5, 5), (-5, 5), (-5, 5), (50, 100)))
+                    if ball.color == balls[0].color:
+                        #only create a new ball if the red ball collides with something
+                        if not mute:
+                            random.choice(hitSounds).play()
+                        balls.append(genNewBall(ball.rect.center, ball.xVel, ball.yVel, (ball.radius, ball.vel, (249, 249, 249), xDir)))
 
             #checking if ball is out on right side
             if ball.rect.x >= display.get_width():
                 if not ball.out:
-                #    particles.extend(genCollideParticles(display.get_width(), ball.rect.centery, (255, 172, 183), (10, 15), (-20, 10), (-20, 20), (50, 100)))
-                    screenShake = [random.randint(5, 10), random.randint(5, 10)]
-                    shakeTime = time.time()
-                #    ballCrunch(hitSounds, minVol, crunchDelay)
                     score[0] += 1
                     xDir = -1
                 ball.out = True
 
             #checking if ball is out on left side
-            elif ball.rect.x + ball.rect.h <= 0:
-                if not ball.out: 
-                 #   particles.extend(genCollideParticles(0, ball.rect.centery, (255, 172, 183), (10, 15), (10, 20), (-20, 20), (50, 100)))
-                    screenShake = [random.randint(5, 10), random.randint(5, 10)]
-                    shakeTime = time.time()
-                 #   ballCrunch(hitSounds, minVol, crunchDelay)
+            elif ball.rect.right <= 0:
+                if not ball.out:
                     score[1] += 1
                     xDir = 1
                 ball.out = True
+
+            #check if the ball goes out
+            if ball.out and not pause:
+                if ball.color != balls[0].color:
+                    balls.pop(balls.index(ball))
+                if not mute:
+                    setVolumes(hitSounds, maxVol)
+                #re render score
+                pointSurface = bigFont.render(f"{score[0]} - {score[1]}", False, (249, 249, 249))
+                pointSize = bigFont.size(f"{score[0]} - {score[1]}")
+                pointCenter = pointSize[0] // 2, pointSize[1] // 2
+                #re render gui
+                gui.fill((0,0,0))
+                gui.blit(pointSurface, (gui.get_width() // 2 - pointCenter[0], 0 + pointCenter[1]))
 
         #update all particles
         for particle in particles:
@@ -187,35 +194,16 @@ def BurstMode(display, screen, players, hitSounds, vols, bigFont, score, ballInf
                     particles.remove(particle)
             else:
                 particle.draw(display)
-        
-        #decreasing screen shake values
-        if screenShake != [0, 0]:
-            if time.time() - shakeTime > .1:
-                shakeTime = time.time()
-                if screenShake[0] > 0:
-                    screenShake[0] -= 1
-                if screenShake[1] > 0:
-                    screenShake[1] -= 1
 
-        #reset game
-        if ball.out and not pause:
-            balls.pop(balls.index(ball))
-            setVolumes(hitSounds, maxVol)
-            #re render score
-            pointSurface = bigFont.render(f"{score[0]} - {score[1]}", False, (249, 249, 249))
-            pointSize = bigFont.size(f"{score[0]} - {score[1]}")
-            pointCenter = (pointSize[0] // 2, pointSize[1] // 2)
-            #re render gui
-            gui = pygame.Surface((display.get_width(), display.get_height()))
-            gui.set_colorkey((0,0,0))
-            gui.blit(pointSurface, (gui.get_width() // 2 - pointCenter[0], 0 + pointCenter[1]))
+        #if the spawn ball is out, wait for all balls to be cleared and then reset
+        if balls[0].out and len(balls) < 2:
+            balls[0].reset(display, xDir)
 
-            
         #update gui
         display.blit(gui, (0,0))
 
         #update screen and pause
-        screen.blit(pygame.transform.scale(display, (screen.get_width(), screen.get_height())), (0 - screenShake[0] * random.choice([-1, 1]), 0 - screenShake[1] * random.choice([-1, 1])))
+        screen.blit(pygame.transform.scale(display, (screen.get_width(), screen.get_height())), (0, 0))
         if pause:
             screen.blit(pygame.transform.scale(pauseSurface, (screen.get_width(), screen.get_height())), (0,0))
         pygame.display.flip()
