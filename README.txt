@@ -14,9 +14,8 @@ Controls:
 
 To Install:
  - Unzip the downloaded folder
- - Make sure that the "data" folder is in the same folder as the "pong.py"
- - "pong.py" will run as long as the "data" folder is in the same folder
- - You can also compile the "pong.py" if you wish for a .exe version
+ - Make sure that the "data" folder is in the same folder as the "pong.exe"
+- As long as the "data" folder is in the same folder as "pong.exe", running "pong.exe" will open the game
 
 To Play:
  - Press ENTER / RETURN to exit the title and go to the selection screen
@@ -26,6 +25,25 @@ To Play:
  - Use the movement keys to move the paddles in order to bounce the ball
  - Score by bouncing the ball pass the other paddle
  - Pause / exit the game using ESCAPE
+
+Game mode instructions:
+ - Classic:
+    - Just a simple recreation of the classic game Pong by Atari, with added particle effects and screen shakes! 
+- Burst:
+    - The red ball is the main ball on screen, it's the only ball that makes sounds on bounce. It is also the only ball that generates new balls whenever it bounces, with a different velocity in the y direction.
+    - Try to deflect as many balls as possible!
+ - Rain:
+    - Little orange effects will "rain" down over the field, and if the ball happens to hit one of these effects, it too will be orange
+    - Try not to be scored on while trying to score on the enemy paddle, as if you're scored on and the ball has an effect, bad things can happen
+    - Buffs will apply to whoever scored the ball when it has buffs
+    - Debuffs will apply to whoever was scored on when the ball has buffs
+    - Be careful playing 1 player in this mode! It gets very hard
+ - Swap:
+    - The paddles are two distinct colors in order to keep track who is who
+    - Randomly every 5 to 10 seconds, the paddles will flip, but the score will not
+    - Should you score the ball? What if the paddles switch and now your amazing deflect will be your demise
+ - Blank: 
+    - Currently blank, new game modes will be added in the future though!
 
 Contact:
  - Email: andynguyen.aln@gmail.com
