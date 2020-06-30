@@ -27,56 +27,46 @@ class Block:
         #draw the block
         self.draw(display)
 
-    def aiUpdate(self, display, ball, dt, checkDist, tol, isRight, pause, otherBlock, centering):
-        if not pause:
-            if isRight:
-                if not ball.out:
-                    if ball.rect.centerx <= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
-                        yDist = self.rect.centery - ball.rect.centery
-                        if yDist > ball.radius * tol:
-                            self.up = True
-                            self.down = False
-                        elif yDist < -ball.radius * tol:
-                            self.down = True
-                            self.up = False
-                    elif centering:
-                        if self.rect.centery >= display.get_height() // 2 + self.vel:
-                            self.up = True
-                            self.down = False
-                        elif self.rect.centery <= display.get_height() // 2 - self.vel:
-                            self.up = False
-                            self.down = True
-                        else:
-                            self.up = False
-                            self.down = False
-                        
-                else:
-                    self.up = False
-                    self.down = False
-            else:
-                if not ball.out:
-                    if ball.rect.centerx >= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
-                        yDist = self.rect.centery - ball.rect.centery
-                        if yDist > ball.radius * tol:
-                            self.up = True
-                            self.down = False
-                        elif yDist < -ball.radius * tol:
-                            self.down = True
-                            self.up = False
-                    elif centering:
-                        if self.rect.centery >= display.get_height() // 2 + self.vel:
-                            self.up = True
-                            self.down = False
-                        elif self.rect.centery <= display.get_height() // 2 - self.vel:
-                            self.up = False
-                            self.down = True
-                        else:
-                            self.up = False
-                            self.down = False
-                        
-                else:
-                    self.up = False
-                    self.down = False
-            self.update(display, dt)
+    def aiUpdate(self, display, ball, dt, checkDist, tol, otherBlock, centering):
+        isRight = False
+        if self.rect.centerx > display.get_width() // 2:
+            isRight = True
+        if isRight:
+            self.up = False
+            self.down = False
+            if not ball.out:
+                if ball.rect.centerx <= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
+                    yDist = self.rect.centery - ball.rect.centery
+                    if yDist > ball.radius * tol:
+                        self.up = True
+                        self.down = False
+                    elif yDist < -ball.radius * tol:
+                        self.down = True
+                        self.up = False
+                elif centering:
+                    if self.rect.centery >= display.get_height() // 2 + self.vel:
+                        self.up = True
+                        self.down = False
+                    elif self.rect.centery <= display.get_height() // 2 - self.vel:
+                        self.up = False
+                        self.down = True
         else:
-            self.draw(display)
+            self.up = False
+            self.down = False
+            if not ball.out:
+                if ball.rect.centerx >= checkDist and (ball.lastHit == otherBlock or ball.lastHit == None):
+                    yDist = self.rect.centery - ball.rect.centery
+                    if yDist > ball.radius * tol:
+                        self.up = True
+                        self.down = False
+                    elif yDist < -ball.radius * tol:
+                        self.down = True
+                        self.up = False
+                elif centering:
+                    if self.rect.centery >= display.get_height() // 2 + self.vel:
+                        self.up = True
+                        self.down = False
+                    elif self.rect.centery <= display.get_height() // 2 - self.vel:
+                        self.up = False
+                        self.down = True
+        self.update(display, dt)
